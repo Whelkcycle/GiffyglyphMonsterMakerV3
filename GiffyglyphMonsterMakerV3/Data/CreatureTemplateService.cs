@@ -200,8 +200,8 @@ namespace GiffyglyphMonsterMakerV3.Data
                          int.TryParse(parts[1], out var value))
                     target[key] = value;
                 else if (change.Operation == TemplateChangeOperation.Modify && parts.Length == 2 &&
-                         int.TryParse(parts[1], out var value))
-                    target[key] = value;
+                         int.TryParse(parts[1], out var modifiedValue))
+                    target[key] = modifiedValue;
             }
         }
     }
