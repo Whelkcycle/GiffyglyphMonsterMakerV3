@@ -26,9 +26,9 @@ namespace GiffyglyphMonsterMakerV3.Data
                 "<span class=\"text-white fa-solid p-1 align-middle " + (String.IsNullOrWhiteSpace(CustomIcon) ? Icon : CustomIcon) + " " + RarityStyle + "\"></span></span><span class=\"ms-1\">";
 
             desc += @"<span class=""fw-bold"">" + Name;
-            if (Frequency.Type != FrequencyType.passive)
+            if (!string.IsNullOrWhiteSpace(FrequencyDisplayText))
             {
-                desc += " (" + Frequency.StringValue + ")";
+                desc += " (" + FrequencyDisplayText + ")";
             }
             desc += @": </span>";
 
@@ -94,7 +94,15 @@ namespace GiffyglyphMonsterMakerV3.Data
         }
         public bool HasSave { get; set; }
         public string SaveVs { get; set; } = "";
+        // Free-text frequency replaces the old structured cooldown/delay controls.
+        // The legacy object remains mapped so existing databases and saved monsters remain readable.
+        public string FrequencyText { get; set; } = "";
+        [NotMapped]
+        public string FrequencyDisplayText => !string.IsNullOrWhiteSpace(FrequencyText)
+            ? FrequencyText
+            : (Frequency != null && (Frequency.Type != FrequencyType.passive || Frequency.Delay != DelayType.none) ? Frequency.StringValue : "");
         public FeatureFrequency Frequency { get; set; } = new();
+        public int SortOrder { get; set; }
         [ForeignKey("Id")]
         public Guid? ParentId { get; set; }
 
@@ -110,6 +118,8 @@ namespace GiffyglyphMonsterMakerV3.Data
             CustomIcon = f.CustomIcon;
             HasSave = f.HasSave;
             SaveVs = f.SaveVs;
+            FrequencyText = f.FrequencyText;
+            SortOrder = f.SortOrder;
             Guid tempFreqId = Frequency.Id;
             Frequency = f.Frequency.Clone();
             Frequency.Id = tempFreqId;
