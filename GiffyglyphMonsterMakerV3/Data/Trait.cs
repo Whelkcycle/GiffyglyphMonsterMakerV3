@@ -16,6 +16,8 @@ namespace GiffyglyphMonsterMakerV3.Data
             string desc =
                 "<span class=\"text-white fas p-1 align-middle " + (String.IsNullOrWhiteSpace(CustomIcon) ? Icon : CustomIcon) + " " + RarityStyle + "\"></span></span><span class=\"ms-1\">";
             desc += @"<span class=""fw-bold"">" + Name;
+            if (!string.IsNullOrWhiteSpace(FrequencyDisplayText))
+                desc += " (" + FrequencyDisplayText + ")";
             desc += ":</span> ";
             //If you want to just totally override a thing, go for it
             if (!string.IsNullOrWhiteSpace(OverrideMarkup))
