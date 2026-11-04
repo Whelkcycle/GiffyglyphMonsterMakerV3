@@ -17,6 +17,7 @@ namespace GiffyglyphMonsterMakerV3.Data
         public DbSet<Monster> Monsters { get; set; }
         public DbSet<Feature> Features { get; set; }
         public DbSet<Folder> Folders { get; set; }
+        public DbSet<CreatureTemplate> CreatureTemplates { get; set; }
         
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
         {
@@ -95,6 +96,12 @@ namespace GiffyglyphMonsterMakerV3.Data
                 .HasConversion(
                     v => string.Join('+', v),
                     v => v.Split('+', StringSplitOptions.RemoveEmptyEntries).ToList()
+                );
+            modelBuilder.Entity<Creature>()
+                .Property(e => e.Skills)
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, JsonSerializerOptions.Default),
+                    v => v == null ? new List<string>() : JsonSerializer.Deserialize<List<string>>(v, JsonSerializerOptions.Default) ?? new List<string>()
                 );
             modelBuilder.Entity<Creature>()
                 .HasOne<ApplicationUser>()
