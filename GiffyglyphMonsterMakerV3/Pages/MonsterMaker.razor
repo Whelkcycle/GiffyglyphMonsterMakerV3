@@ -350,10 +350,18 @@ else
                         {
                             <div>
                                 <span class="fw-bold">@fType@(fType.ToString().EndsWith("s") ? "" : "s")</span>
-                                @foreach (var feature in ActiveMonster.Features.Where(a => a.Type == fType).OrderBy(d => d.Rarity).ThenByDescending(c => c.Name))
+                                @{
+                                    var orderedFeatures = ActiveMonster.Features.Where(a => a.Type == fType)
+                                        .OrderBy(a => a.SortOrder == 0 ? int.MaxValue : a.SortOrder)
+                                        .ThenBy(a => a.Rarity).ThenByDescending(a => a.Name).ToList();
+                                }
+                                @for (var featureIndex = 0; featureIndex < orderedFeatures.Count; featureIndex++)
                                 {
+                                    var feature = orderedFeatures[featureIndex];
                                     <div class="py-1">
                                         <span>
+                                            <button type="button" class="btn btn-sm btn-link p-0 me-1" title="Move up" disabled="@(featureIndex == 0)" @onclick="() => MoveFeature(feature, -1)"><span class="fa-solid fa-arrow-up" /></button>
+                                            <button type="button" class="btn btn-sm btn-link p-0 me-1" title="Move down" disabled="@(featureIndex == orderedFeatures.Count - 1)" @onclick="() => MoveFeature(feature, 1)"><span class="fa-solid fa-arrow-down" /></button>
                                             <span class="line-icon"><span class="text-white fa-solid p-1 align-middle @(String.IsNullOrWhiteSpace(feature.CustomIcon) ? feature.Icon : feature.CustomIcon) @feature.RarityStyle"></span></span><span class="ms-1">@feature.Name</span>
                                             <span class="fa-solid fa-pencil ms-1" data-bs-toggle="modal" data-bs-target="#featureModal" @onclick="() => EditFeature = feature" />
                                             <span class="fa-solid fa-circle-xmark ms-1" data-bs-toggle="modal" data-bs-target="#confirmDeleteFeatureModal" @onclick="() => DeleteFeatureModalTarget = feature" />
@@ -713,6 +721,24 @@ else
     private int LowStat
     {
         get { return (int)Math.Floor(ActiveMonster.CombatLevel / 12.0) - 1; }
+    }
+
+    private async Task MoveFeature(Feature feature, int direction)
+    {
+        var group = ActiveMonster.Features.Where(a => a.Type == feature.Type)
+            .OrderBy(a => a.SortOrder == 0 ? int.MaxValue : a.SortOrder)
+            .ThenBy(a => a.Rarity).ThenByDescending(a => a.Name).ToList();
+        var index = group.IndexOf(feature);
+        var target = index + direction;
+        if (index < 0 || target < 0 || target >= group.Count)
+            return;
+
+        (group[index], group[target]) = (group[target], group[index]);
+        for (var i = 0; i < group.Count; i++)
+            group[i].SortOrder = i + 1;
+
+        await SaveActiveMonster(false);
+        StateHasChanged();
     }
 
     private async Task SaveActiveMonster(bool showToast)
