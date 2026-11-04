@@ -10,7 +10,7 @@
         <div class="row g-2 align-items-end">
             <div class="col-md-4">
                 <label class="form-label">Type template</label>
-                <InputSelect class="form-select" @bind-Value="SelectedTypeId">
+                <InputSelect class="form-select" @bind-Value="SelectedTypeId" @bind-Value:after="TypeSelectionChanged">
                     <option value="">(none)</option>
                     @foreach (var item in Templates.Where(t => t.Layer == CreatureTemplateLayer.Type))
                     {
@@ -20,7 +20,7 @@
             </div>
             <div class="col-md-4">
                 <label class="form-label">Family template</label>
-                <InputSelect class="form-select" @bind-Value="SelectedFamilyId">
+                <InputSelect class="form-select" @bind-Value="SelectedFamilyId" @bind-Value:after="FamilySelectionChanged">
                     <option value="">(none)</option>
                     @foreach (var item in Templates.Where(t => t.Layer == CreatureTemplateLayer.Family && t.ParentTemplateId == ParseId(SelectedTypeId)))
                     {
@@ -211,6 +211,16 @@
     private void LayerChanged()
     {
         EditorParentId = "";
+    }
+    private void TypeSelectionChanged()
+    {
+        SelectedFamilyId = "";
+        SelectedGenusId = "";
+    }
+
+    private void FamilySelectionChanged()
+    {
+        SelectedGenusId = "";
     }
 
     private void LoadEditor()
