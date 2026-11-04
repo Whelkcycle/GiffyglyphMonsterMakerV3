@@ -1,0 +1,23 @@
+name: Build Monster Maker
+
+on:
+  push:
+    branches:
+      - custom-monster-maker
+  pull_request:
+    branches:
+      - master
+      - custom-monster-maker
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+      - name: Restore
+        run: dotnet restore GiffyglyphMonsterMakerV3/GiffyglyphMonsterMakerV3.csproj
+      - name: Build
+        run: dotnet build GiffyglyphMonsterMakerV3/GiffyglyphMonsterMakerV3.csproj --no-restore --configuration Release
