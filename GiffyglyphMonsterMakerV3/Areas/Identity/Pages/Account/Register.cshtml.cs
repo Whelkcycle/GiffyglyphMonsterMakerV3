@@ -132,15 +132,15 @@ namespace GiffyglyphMonsterMakerV3.Areas.Identity.Pages.Account
                         values: new { area = "Identity", userId = userId, code = code, returnUrl = returnUrl },
                         protocol: Request.Scheme);
 
-                    await _emailSender.SendEmailAsync(Input.Email, "Confirm Giffyglyph's MonsterMaker Account",
-                        $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.<br />Thanks for helping to test!<br />-Skyl3lazer");
-
                     if (_userManager.Options.SignIn.RequireConfirmedAccount)
                     {
+                        await _emailSender.SendEmailAsync(Input.Email, "Confirm Giffyglyph's MonsterMaker Account",
+                            $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.<br />Thanks for helping to test!<br />-Skyl3lazer");
                         return RedirectToPage("RegisterConfirmation", new { email = Input.Email, returnUrl = returnUrl });
                     }
                     else
                     {
+                        // Local development uses an offline account flow; no SMTP server is required.
                         await _signInManager.SignInAsync(user, isPersistent: false);
                         return LocalRedirect(returnUrl);
                     }
