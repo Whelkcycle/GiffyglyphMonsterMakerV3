@@ -1,6 +1,7 @@
 @using System.Text.Json
 @using GiffyglyphMonsterMakerV3.Data
 @inject CreatureTemplateService TemplateService
+@inject FeatureService FeatureService
 @inject Blazored.Toast.Services.IToastService Toast
 
 <div class="card my-2">
@@ -326,7 +327,16 @@
     {
         try
         {
+            var before = ActiveMonster.Features.ToList();
+            var beforeIds = before.Select(f => f.Id).ToHashSet();
             await TemplateService.ApplyAsync(ActiveMonster, ParseId(SelectedTypeId), ParseId(SelectedFamilyId), ParseId(SelectedGenusId));
+            var afterIds = ActiveMonster.Features.Select(f => f.Id).ToHashSet();
+
+            foreach (var removed in before.Where(f => !afterIds.Contains(f.Id)))
+                await FeatureService.DeleteFeatureAsync(removed);
+            foreach (var added in ActiveMonster.Features.Where(f => !beforeIds.Contains(f.Id)))
+                await FeatureService.InsertFeatureAsync(added);
+
             await OnApplied.InvokeAsync();
             Toast.ShowSuccess("Applied creature templates");
         }
