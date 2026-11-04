@@ -18,14 +18,6 @@ if errorlevel 1 (
   exit /b 1
 )
 
-where sqllocaldb >nul 2>nul
-if errorlevel 1 (
-  echo SQL Server Express LocalDB was not found.
-  echo Install SQL Server Express LocalDB, then run this file again.
-  pause
-  exit /b 1
-)
-
 set ASPNETCORE_ENVIRONMENT=Development
 echo.
 echo Starting your local Monster Maker.
