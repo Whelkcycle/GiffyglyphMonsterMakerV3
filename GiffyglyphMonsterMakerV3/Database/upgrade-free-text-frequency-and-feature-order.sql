@@ -21,11 +21,20 @@ END;
 GO
 
 /* Creature-template storage and creature skill proficiencies. */
-IF COL_LENGTH('dbo.Monsters', 'Skills') IS NULL
+DECLARE @CreatureTable nvarchar(256);
+IF OBJECT_ID(N'dbo.Monsters', N'U') IS NOT NULL
+    SET @CreatureTable = N'dbo.Monsters';
+ELSE IF OBJECT_ID(N'dbo.Creatures', N'U') IS NOT NULL
+    SET @CreatureTable = N'dbo.Creatures';
+ELSE
+    THROW 51000, 'Could not find the creature table (expected dbo.Monsters or dbo.Creatures).', 1;
+
+IF COL_LENGTH(@CreatureTable, 'Skills') IS NULL
 BEGIN
-    ALTER TABLE dbo.Monsters
-        ADD Skills nvarchar(max) NOT NULL
-            CONSTRAINT DF_Monsters_Skills DEFAULT (N'[]');
+    DECLARE @SkillsSql nvarchar(max) =
+        N'ALTER TABLE ' + @CreatureTable +
+        N' ADD Skills nvarchar(max) NOT NULL CONSTRAINT DF_Creature_Skills DEFAULT (N''[]'');';
+    EXEC sp_executesql @SkillsSql;
 END;
 GO
 
