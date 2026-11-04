@@ -26,6 +26,7 @@
 else
 {
     <_FeatureModal ActiveMonster="ActiveMonster" SpecificFeature="EditFeature" FeatureChangedCallback="(f) => FeaturesUpdated(f)" SelectedFeatureCallback="(f) => EditFeatureChanged(f)" SaveMonster="() => SaveActiveMonster(false)" />
+    <_CreatureTemplatePanel ActiveMonster="ActiveMonster" OnApplied="() => SaveActiveMonster(false)" />
     <_ConfirmDeleteFeatureModal TargetFeature="DeleteFeatureModalTarget" Result="(a) => ConfirmDeleteFeatureModalResult((Feature)a)" />
 
     <PageTitle>Monster Statblock Maker V3</PageTitle>
@@ -305,6 +306,9 @@ else
                         </div>
                         <div>
                             <_EnumAdder Dict="@ActiveMonster.Senses" Header="Senses" ValueChangedEvent="(a) => SenseUpdated(a)"></_EnumAdder>
+                        </div>
+                        <div>
+                            <_stringAdder Header="Skills" ValueList="@ActiveMonster.Skills" ValueChangedEvent="(a) => SkillsUpdated(a)" DefaultList="new List<string> { "Acrobatics", "Animal Handling", "Arcana", "Athletics", "Deception", "History", "Insight", "Intimidation", "Investigation", "Medicine", "Nature", "Perception", "Performance", "Persuasion", "Religion", "Sleight of Hand", "Stealth", "Survival" }"></_stringAdder>
                         </div>
                         <div>
                             <_stringAdder Header="Languages" ValueList="@ActiveMonster.Languages" ValueChangedEvent="(a) => LanguagesUpdated(a)" DefaultList="Enum.GetNames(typeof(DefaultLanguages)).ToList()"></_stringAdder>
@@ -872,6 +876,11 @@ else
     {
         var itemList = (List<string>)val;
         ActiveMonster.Languages = itemList;
+    }
+    public void SkillsUpdated(object? val)
+    {
+        var itemList = (List<string>)val;
+        ActiveMonster.Skills = itemList;
     }
     public void ImmunitiesUpdated(object? val)
     {
