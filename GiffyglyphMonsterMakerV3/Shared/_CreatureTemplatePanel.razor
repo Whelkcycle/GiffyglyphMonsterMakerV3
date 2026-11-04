@@ -1,0 +1,335 @@
+@using System.Text.Json
+@using GiffyglyphMonsterMakerV3.Data
+@inject CreatureTemplateService TemplateService
+@inject Blazored.Toast.Services.IToastService Toast
+
+<div class="card my-2">
+    <div class="card-header fw-bold">Creature Templates — Type → Family → Genus</div>
+    <div class="card-body">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label">Type template</label>
+                <InputSelect class="form-select" @bind-Value="SelectedTypeId">
+                    <option value="">(none)</option>
+                    @foreach (var item in Templates.Where(t => t.Layer == CreatureTemplateLayer.Type))
+                    {
+                        <option value="@item.Id">@item.Name</option>
+                    }
+                </InputSelect>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Family template</label>
+                <InputSelect class="form-select" @bind-Value="SelectedFamilyId">
+                    <option value="">(none)</option>
+                    @foreach (var item in Templates.Where(t => t.Layer == CreatureTemplateLayer.Family && t.ParentTemplateId == ParseId(SelectedTypeId)))
+                    {
+                        <option value="@item.Id">@item.Name</option>
+                    }
+                </InputSelect>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Genus template</label>
+                <InputSelect class="form-select" @bind-Value="SelectedGenusId">
+                    <option value="">(none)</option>
+                    @foreach (var item in Templates.Where(t => t.Layer == CreatureTemplateLayer.Genus && t.ParentTemplateId == ParseId(SelectedFamilyId)))
+                    {
+                        <option value="@item.Id">@item.Name</option>
+                    }
+                </InputSelect>
+            </div>
+        </div>
+        <div class="mt-2">
+            <button class="btn btn-primary btn-sm" @onclick="ApplyTemplates" disabled="@(!ParseId(SelectedTypeId).HasValue)">Apply selected templates to this monster</button>
+        </div>
+        <hr />
+        <div class="d-flex align-items-center justify-content-between">
+            <span class="fw-bold">Template library</span>
+            <button class="btn btn-outline-primary btn-sm" @onclick="NewTemplate">New template</button>
+        </div>
+        <div class="row g-2 mt-1">
+            <div class="col-md-5">
+                <label class="form-label">Edit saved template</label>
+                <InputSelect class="form-select" @bind-Value="EditTemplateId" @bind-Value:after="LoadEditor">
+                    <option value="">(new template)</option>
+                    @foreach (var item in Templates.OrderBy(t => t.Layer).ThenBy(t => t.Name))
+                    {
+                        <option value="@item.Id">@item.Layer — @item.Name</option>
+                    }
+                </InputSelect>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Layer</label>
+                <InputSelect class="form-select" @bind-Value="EditorLayer" @bind-Value:after="LayerChanged">
+                    @foreach (var layer in Enum.GetValues<CreatureTemplateLayer>())
+                    {
+                        <option value="@layer">@layer</option>
+                    }
+                </InputSelect>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Template name</label>
+                <InputText class="form-control" @bind-Value="EditorName" />
+            </div>
+        </div>
+        @if (EditorLayer != CreatureTemplateLayer.Type)
+        {
+            <div class="mt-2">
+                <label class="form-label">Parent template</label>
+                <InputSelect class="form-select" @bind-Value="EditorParentId">
+                    <option value="">(select parent)</option>
+                    @foreach (var item in Templates.Where(t => t.Layer == (CreatureTemplateLayer)((int)EditorLayer - 1)))
+                    {
+                        <option value="@item.Id">@item.Name</option>
+                    }
+                </InputSelect>
+            </div>
+        }
+        <div class="row g-2 mt-1">
+            <div class="col-md-4">
+                <label class="form-label">Size override (optional)</label>
+                <InputSelect class="form-select" @bind-Value="EditorSize">
+                    <option value="">(inherit)</option>
+                    @foreach (var value in Enum.GetValues<SizeType>()) { <option value="@value">@value</option> }
+                </InputSelect>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Creature type override (optional)</label>
+                <InputSelect class="form-select" @bind-Value="EditorCreatureType">
+                    <option value="">(inherit)</option>
+                    @foreach (var value in Enum.GetValues<CreatureType>()) { <option value="@value">@value</option> }
+                </InputSelect>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Walk speed override (optional)</label>
+                <InputText class="form-control" @bind-Value="EditorWalkSpeed" placeholder="e.g. 40" />
+            </div>
+        </div>
+        <div class="mt-2">
+            <label class="form-label">Type detail override (leave blank to inherit)</label>
+            <InputText class="form-control" @bind-Value="EditorTypeDetail" />
+        </div>
+        <div class="row g-2 mt-1">
+            <div class="col-md-6">
+                <label class="form-label">Resistance changes</label>
+                <InputTextArea class="form-control" rows="3" @bind-Value="EditorResistances" />
+                <small class="text-muted">One per line: +fire or -cold</small>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Immunity changes</label>
+                <InputTextArea class="form-control" rows="3" @bind-Value="EditorImmunities" />
+                <small class="text-muted">One per line: +poison or -charmed</small>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Vulnerability changes</label>
+                <InputTextArea class="form-control" rows="3" @bind-Value="EditorVulnerabilities" />
+                <small class="text-muted">One per line: +radiant or -cold</small>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Skill changes</label>
+                <InputTextArea class="form-control" rows="3" @bind-Value="EditorSkills" />
+                <small class="text-muted">One per line: +Perception or -Stealth</small>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Movement changes</label>
+                <InputTextArea class="form-control" rows="3" @bind-Value="EditorSpeeds" />
+                <small class="text-muted">One per line: +Fly:60, ~Climb:40, or -Swim</small>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Sense changes</label>
+                <InputTextArea class="form-control" rows="3" @bind-Value="EditorSenses" />
+                <small class="text-muted">One per line: +darkvision:60, ~tremorsense:120, or -blindsight</small>
+            </div>
+        </div>
+        <div class="mt-2">
+            <label class="form-label">Trait changes</label>
+            <InputTextArea class="form-control" rows="5" @bind-Value="EditorTraits" />
+            <small class="text-muted">One per line: +Trait Name | Description | Frequency; ~Trait Name | replacement description | Frequency; or -Trait Name. A child can modify or remove an inherited trait by name.</small>
+        </div>
+        <div class="mt-3 d-flex gap-2">
+            <button class="btn btn-success btn-sm" @onclick="SaveTemplate">Save template</button>
+            @if (ParseId(EditTemplateId).HasValue)
+            {
+                <button class="btn btn-outline-danger btn-sm" @onclick="DeleteTemplate">Delete template</button>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public Monster ActiveMonster { get; set; } = default!;
+    [Parameter] public EventCallback OnApplied { get; set; }
+
+    private List<CreatureTemplate> Templates = new();
+    private string SelectedTypeId = "";
+    private string SelectedFamilyId = "";
+    private string SelectedGenusId = "";
+    private string EditTemplateId = "";
+    private CreatureTemplateLayer EditorLayer = CreatureTemplateLayer.Type;
+    private string EditorName = "";
+    private string EditorParentId = "";
+    private string EditorSize = "";
+    private string EditorCreatureType = "";
+    private string EditorWalkSpeed = "";
+    private string EditorTypeDetail = "";
+    private string EditorResistances = "";
+    private string EditorImmunities = "";
+    private string EditorVulnerabilities = "";
+    private string EditorSkills = "";
+    private string EditorSpeeds = "";
+    private string EditorSenses = "";
+    private string EditorTraits = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshTemplates();
+    }
+
+    private async Task RefreshTemplates()
+    {
+        Templates = await TemplateService.GetAllAsync();
+    }
+
+    private static Guid? ParseId(string value) => Guid.TryParse(value, out var id) ? id : null;
+
+    private void NewTemplate()
+    {
+        EditTemplateId = "";
+        EditorLayer = CreatureTemplateLayer.Type;
+        EditorName = "";
+        EditorParentId = "";
+        ClearEditorPayload();
+    }
+
+    private void ClearEditorPayload()
+    {
+        EditorSize = ""; EditorCreatureType = ""; EditorWalkSpeed = ""; EditorTypeDetail = "";
+        EditorResistances = ""; EditorImmunities = ""; EditorVulnerabilities = "";
+        EditorSkills = ""; EditorSpeeds = ""; EditorSenses = ""; EditorTraits = "";
+    }
+
+    private void LayerChanged()
+    {
+        EditorParentId = "";
+    }
+
+    private void LoadEditor()
+    {
+        var item = Templates.FirstOrDefault(t => t.Id == ParseId(EditTemplateId));
+        if (item == null) { NewTemplate(); return; }
+        EditorLayer = item.Layer;
+        EditorName = item.Name;
+        EditorParentId = item.ParentTemplateId?.ToString() ?? "";
+        var payload = JsonSerializer.Deserialize<CreatureTemplatePayload>(item.PayloadJson) ?? new();
+        EditorSize = payload.Size?.ToString() ?? "";
+        EditorCreatureType = payload.CreatureType?.ToString() ?? "";
+        EditorWalkSpeed = payload.WalkSpeed?.ToString() ?? "";
+        EditorTypeDetail = payload.TypeDetail ?? "";
+        EditorResistances = FormatList(payload.Resistances);
+        EditorImmunities = FormatList(payload.Immunities);
+        EditorVulnerabilities = FormatList(payload.Vulnerabilities);
+        EditorSkills = FormatList(payload.Skills);
+        EditorSpeeds = FormatList(payload.Speeds);
+        EditorSenses = FormatList(payload.Senses);
+        EditorTraits = string.Join(Environment.NewLine, payload.Traits.Select(t =>
+            (t.Operation == TemplateChangeOperation.Add ? "+" : t.Operation == TemplateChangeOperation.Remove ? "-" : "~") +
+            t.Name + (t.Operation == TemplateChangeOperation.Remove ? "" : " | " + t.Description + " | " + t.FrequencyText)));
+    }
+
+    private static string FormatList(List<TemplateValueChange> values) =>
+        string.Join(Environment.NewLine, values.Select(v =>
+            (v.Operation == TemplateChangeOperation.Add ? "+" : v.Operation == TemplateChangeOperation.Remove ? "-" : "~") + v.Value));
+
+    private static List<TemplateValueChange> ParseValueChanges(string text)
+    {
+        var result = new List<TemplateValueChange>();
+        foreach (var raw in text.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
+        {
+            var line = raw.Trim();
+            if (line.Length < 2 || (line[0] != '+' && line[0] != '-' && line[0] != '~')) continue;
+            result.Add(new TemplateValueChange
+            {
+                Operation = line[0] == '+' ? TemplateChangeOperation.Add : line[0] == '-' ? TemplateChangeOperation.Remove : TemplateChangeOperation.Modify,
+                Value = line[1..].Trim()
+            });
+        }
+        return result;
+    }
+
+    private static string? ParseOptional(string value) => string.IsNullOrWhiteSpace(value) ? null : value;
+
+    private CreatureTemplatePayload BuildPayload()
+    {
+        var payload = new CreatureTemplatePayload
+        {
+            Size = Enum.TryParse<SizeType>(EditorSize, out var size) ? size : null,
+            CreatureType = Enum.TryParse<CreatureType>(EditorCreatureType, out var type) ? type : null,
+            TypeDetail = ParseOptional(EditorTypeDetail),
+            WalkSpeed = int.TryParse(EditorWalkSpeed, out var speed) ? speed : null,
+            Resistances = ParseValueChanges(EditorResistances),
+            Immunities = ParseValueChanges(EditorImmunities),
+            Vulnerabilities = ParseValueChanges(EditorVulnerabilities),
+            Skills = ParseValueChanges(EditorSkills),
+            Speeds = ParseValueChanges(EditorSpeeds),
+            Senses = ParseValueChanges(EditorSenses)
+        };
+        foreach (var raw in EditorTraits.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
+        {
+            var line = raw.Trim();
+            if (line.Length < 2 || (line[0] != '+' && line[0] != '-' && line[0] != '~')) continue;
+            var parts = line[1..].Split('|', 3, StringSplitOptions.TrimEntries);
+            payload.Traits.Add(new TemplateTraitChange
+            {
+                Operation = line[0] == '+' ? TemplateChangeOperation.Add : line[0] == '-' ? TemplateChangeOperation.Remove : TemplateChangeOperation.Modify,
+                Name = parts[0],
+                Description = parts.Length > 1 ? parts[1] : "",
+                FrequencyText = parts.Length > 2 ? parts[2] : ""
+            });
+        }
+        return payload;
+    }
+
+    private async Task SaveTemplate()
+    {
+        try
+        {
+            var template = new CreatureTemplate
+            {
+                Id = ParseId(EditTemplateId) ?? Guid.NewGuid(),
+                Name = EditorName,
+                Layer = EditorLayer,
+                ParentTemplateId = EditorLayer == CreatureTemplateLayer.Type ? null : ParseId(EditorParentId),
+                PayloadJson = JsonSerializer.Serialize(BuildPayload())
+            };
+            await TemplateService.SaveAsync(template);
+            EditTemplateId = template.Id.ToString();
+            await RefreshTemplates();
+            Toast.ShowSuccess("Saved " + template.Name);
+        }
+        catch (Exception ex) { Toast.ShowError(ex.Message); }
+    }
+
+    private async Task DeleteTemplate()
+    {
+        try
+        {
+            var id = ParseId(EditTemplateId);
+            if (!id.HasValue) return;
+            await TemplateService.DeleteAsync(id.Value);
+            await RefreshTemplates();
+            NewTemplate();
+            Toast.ShowSuccess("Deleted template");
+        }
+        catch (Exception ex) { Toast.ShowError(ex.Message); }
+    }
+
+    private async Task ApplyTemplates()
+    {
+        try
+        {
+            await TemplateService.ApplyAsync(ActiveMonster, ParseId(SelectedTypeId), ParseId(SelectedFamilyId), ParseId(SelectedGenusId));
+            await OnApplied.InvokeAsync();
+            Toast.ShowSuccess("Applied creature templates");
+        }
+        catch (Exception ex) { Toast.ShowError(ex.Message); }
+    }
+}
