@@ -31,7 +31,7 @@ The Creature Templates panel is at the top of the Monster Maker page.
 4. Select the Type, then its optional Family and Genus, and apply them to the current monster.
 5. Set Combat Level and Role in the existing Monster Details section. Existing level/role calculations remain unchanged.
 
-Each template stores only the changes authored in that layer. Applying a chain processes Type, Family, then Genus. A child can add, remove, or modify a trait inherited from its parent by matching the trait name (case-insensitively). Editing a template definition does not edit its parent or sibling templates.
+Each template stores only the changes authored in that layer. Applying a chain processes Type, Family, then Genus. A child can add, remove, or modify a trait inherited from its parent by matching the trait name (case-insensitively). Editing a template definition does not edit its parent or sibling templates. Applying a different chain to a monster does not automatically roll back changes from a previously applied chain; apply templates to a fresh monster when changing its creature lineage.
 
 ### Template change syntax
 
