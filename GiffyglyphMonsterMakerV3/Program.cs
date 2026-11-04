@@ -34,7 +34,7 @@ builder.Services.AddDbContextFactory<ApplicationDbContext>(item => item.UseSqlSe
 }));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-builder.Services.AddDefaultIdentity<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
+builder.Services.AddDefaultIdentity<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = !builder.Environment.IsDevelopment())
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
 
@@ -72,6 +72,26 @@ builder.Services.AddTransient<IEmailSender, MailService>();
 
 
 var app = builder.Build();
+
+// In local Development, create the LocalDB schema on first launch and apply the
+// additive custom-branch upgrade script. Production continues to use its configured database.
+if (app.Environment.IsDevelopment())
+{
+    using var scope = app.Services.CreateScope();
+    var dbFactory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<ApplicationDbContext>>();
+    await using var db = await dbFactory.CreateDbContextAsync();
+    await db.Database.EnsureCreatedAsync();
+
+    var upgradePath = Path.Combine(app.Environment.ContentRootPath, "Database", "upgrade-free-text-frequency-and-feature-order.sql");
+    if (File.Exists(upgradePath))
+    {
+        var upgradeSql = await File.ReadAllTextAsync(upgradePath);
+        var batches = System.Text.RegularExpressions.Regex.Split(
+            upgradeSql, @"^\s*GO\s*(?:--.*)?$", System.Text.RegularExpressions.RegexOptions.Multiline | System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        foreach (var batch in batches.Where(batch => !string.IsNullOrWhiteSpace(batch)))
+            await db.Database.ExecuteSqlRawAsync(batch);
+    }
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
