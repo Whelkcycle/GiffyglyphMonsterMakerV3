@@ -169,45 +169,12 @@
                                         </div>
                                     }
                                     <div class="row">
-                                        <div class="col-5">Frequency:</div>
+                                        <div class="col-5">Frequency / Recharge:</div>
                                         <div class="col-6">
-                                            <InputSelect class="w-100" @bind-Value="SpecificFeature.Frequency.Type" TValue="FrequencyType">
-                                                @foreach (var item in Enum.GetValues(typeof(FrequencyType)))
-                                                {
-                                                    <option value="@item">@item</option>
-                                                }
-                                            </InputSelect>
+                                            <input class="w-100" placeholder="e.g. Recharge 5–6, Recharge 6, Once per encounter"
+                                                   @bind="SpecificFeature.FrequencyText" @bind:event="oninput" />
                                         </div>
                                     </div>
-                                    @if (SpecificFeature.Frequency.Type != FrequencyType.passive)
-                                    {
-                                        <div class="row">
-                                            <div class="col-5"><span class="fa-regular fa-caret-right me-1" />Frequency Value:</div>
-                                            <div class="col-6">
-                                                <input class="w-100" @bind="SpecificFeature.Frequency.Value" @bind:event="oninput" style="width: 50px;" />
-                                            </div>
-                                        </div>
-                                    }
-                                    <div class="row">
-                                        <div class="col-5">Delay:</div>
-                                        <div class="col-6">
-                                            <InputSelect class="w-100" @bind-Value="SpecificFeature.Frequency.Delay" TValue="DelayType">
-                                                @foreach (var item in Enum.GetValues(typeof(DelayType)))
-                                                {
-                                                    <option value="@item">@item</option>
-                                                }
-                                            </InputSelect>
-                                        </div>
-                                    </div>
-                                    @if (SpecificFeature.Frequency.Delay != DelayType.none)
-                                    {
-                                        <div class="row">
-                                            <div class="col-5"><span class="fa-regular fa-caret-right me-1" />Delay Value:</div>
-                                            <div class="col-6">
-                                                <input @bind="SpecificFeature.Frequency.DelayValue" @bind:event="oninput" style="width: 50px;" />
-                                            </div>
-                                        </div>
-                                    }
                                 </div>
                                 <div class="col-7 border-left border-light">
                                     <span class="row fw-bold">@SpecificFeature.Type Specific</span>
