@@ -90,6 +90,7 @@ namespace GiffyglyphMonsterMakerV3.Data
         [ForeignKey("SensesId")]
         public Dictionary<SenseType, int> Senses { get; set; } = new();
         public List<string> Languages { get; set; } = new();
+        public List<string> Skills { get; set; } = new();
         public List<string> Items { get; set; } = new();
 
         public int ParagonThreat { get; set; } = 3;
