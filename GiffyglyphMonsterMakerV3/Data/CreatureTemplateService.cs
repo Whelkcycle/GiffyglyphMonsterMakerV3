@@ -100,11 +100,18 @@ namespace GiffyglyphMonsterMakerV3.Data
 
             for (var i = 0; i < chosen.Length; i++)
             {
-                if (!chosen[i].HasValue) continue;
+                if (!chosen[i].HasValue)
+                {
+                    if (chosen.Skip(i + 1).Any(v => v.HasValue))
+                        throw new InvalidOperationException("Select templates in order: Type, then optional Family, then optional Genus.");
+                    continue;
+                }
+                if (i > 0 && !chosen[i - 1].HasValue)
+                    throw new InvalidOperationException("A child template requires its parent template.");
                 var item = all.FirstOrDefault(t => t.Id == chosen[i]!.Value);
                 if (item == null || item.Layer != expected[i])
                     throw new InvalidOperationException("The selected templates do not match the Type → Family → Genus hierarchy.");
-                if (i > 0 && chain.Count == i && item.ParentTemplateId != chain[i - 1].Id)
+                if (i > 0 && item.ParentTemplateId != chain[i - 1].Id)
                     throw new InvalidOperationException("Each child template must inherit from the selected parent.");
                 chain.Add(item);
             }
