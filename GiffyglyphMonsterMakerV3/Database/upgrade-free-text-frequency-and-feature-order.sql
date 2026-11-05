@@ -20,14 +20,20 @@ BEGIN
 END;
 GO
 
-/* Creature-template storage and creature skill proficiencies. */
+/* Creature-template storage and creature skill proficiencies.
+   EF Core's inheritance mapping can name this shared table after the root
+   entity (Creature), rather than the derived Monster DbSet (Monsters). */
 DECLARE @CreatureTable nvarchar(256);
-IF OBJECT_ID(N'dbo.Monsters', N'U') IS NOT NULL
-    SET @CreatureTable = N'dbo.Monsters';
+IF OBJECT_ID(N'dbo.Creature', N'U') IS NOT NULL
+    SET @CreatureTable = N'dbo.Creature';
 ELSE IF OBJECT_ID(N'dbo.Creatures', N'U') IS NOT NULL
     SET @CreatureTable = N'dbo.Creatures';
+ELSE IF OBJECT_ID(N'dbo.Monster', N'U') IS NOT NULL
+    SET @CreatureTable = N'dbo.Monster';
+ELSE IF OBJECT_ID(N'dbo.Monsters', N'U') IS NOT NULL
+    SET @CreatureTable = N'dbo.Monsters';
 ELSE
-    THROW 51000, 'Could not find the creature table (expected dbo.Monsters or dbo.Creatures).', 1;
+    THROW 51000, 'Could not find the creature table (expected dbo.Creature, dbo.Creatures, dbo.Monster, or dbo.Monsters).', 1;
 
 IF COL_LENGTH(@CreatureTable, 'Skills') IS NULL
 BEGIN
